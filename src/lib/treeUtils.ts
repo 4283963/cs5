@@ -64,18 +64,34 @@ export function getCheckState(
   id: number,
   checked: Set<number>,
   flat: FlatTree,
+  cache?: Map<number, CheckState>,
 ): CheckState {
+  const memo = cache ?? new Map<number, CheckState>()
+  if (memo.has(id)) return memo.get(id)!
   const node = flat.nodeMap.get(id)
-  if (!node) return 'unchecked'
+  if (!node) {
+    memo.set(id, 'unchecked')
+    return 'unchecked'
+  }
   if (node.children.length === 0) {
-    return checked.has(id) ? 'checked' : 'unchecked'
+    const s = checked.has(id) ? 'checked' : 'unchecked'
+    memo.set(id, s)
+    return s
   }
-  const childStates = node.children.map((c) => getCheckState(c.id, checked, flat))
-  if (childStates.every((s) => s === 'checked')) return 'checked'
-  if (childStates.some((s) => s === 'checked' || s === 'indeterminate')) {
-    return 'indeterminate'
+  let allChecked = true
+  let anyTouched = false
+  for (const c of node.children) {
+    const s = getCheckState(c.id, checked, flat, memo)
+    if (s !== 'checked') allChecked = false
+    if (s === 'checked' || s === 'indeterminate') anyTouched = true
   }
-  return 'unchecked'
+  const state: CheckState = allChecked
+    ? 'checked'
+    : anyTouched
+      ? 'indeterminate'
+      : 'unchecked'
+  memo.set(id, state)
+  return state
 }
 
 export function computeCheckStates(
@@ -110,9 +126,17 @@ export function toggleCheckedSet(
   flat: FlatTree,
 ): Set<number> {
   const next = new Set(checked)
-  const state = getCheckState(id, checked, flat)
+  const node = flat.nodeMap.get(id)
+  if (!node) return next
   const ids = [id, ...(flat.descendantsMap.get(id) ?? [])]
-  if (state === 'checked') {
+  const isFullyChecked =
+    node.children.length === 0
+      ? checked.has(id)
+      : (() => {
+          const memo = new Map<number, CheckState>()
+          return getCheckState(id, checked, flat, memo) === 'checked'
+        })()
+  if (isFullyChecked) {
     for (const i of ids) next.delete(i)
   } else {
     for (const i of ids) next.add(i)

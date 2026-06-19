@@ -1,4 +1,4 @@
-import type { TreeNode, NodeType } from '@shared/types'
+import type { TreeNode, NodeType, PermissionLevel } from '@shared/types'
 
 export type CheckState = 'checked' | 'indeterminate' | 'unchecked'
 
@@ -217,4 +217,69 @@ export function allExpandableIds(flat: FlatTree): Set<number> {
     if (n.children.length > 0) s.add(n.id)
   }
   return s
+}
+
+export interface PermState {
+  level: PermissionLevel
+  isInherited: boolean
+  inheritedFrom: number | null
+}
+
+export function computePermStates(
+  explicitPerms: Map<number, PermissionLevel>,
+  flat: FlatTree,
+  defaultLevel: PermissionLevel = 'read',
+): Map<number, PermState> {
+  const result = new Map<number, PermState>()
+  const nodesByDepth: number[][] = []
+  for (const n of flat.allNodes) {
+    const d = flat.depthMap.get(n.id) ?? 0
+    if (!nodesByDepth[d]) nodesByDepth[d] = []
+    nodesByDepth[d].push(n.id)
+  }
+  for (let d = 0; d < nodesByDepth.length; d++) {
+    for (const id of nodesByDepth[d]) {
+      const explicit = explicitPerms.get(id)
+      if (explicit !== undefined) {
+        result.set(id, { level: explicit, isInherited: false, inheritedFrom: null })
+      } else {
+        const parent = flat.parentMap.get(id) ?? null
+        if (parent === null) {
+          result.set(id, { level: defaultLevel, isInherited: false, inheritedFrom: null })
+        } else {
+          const parentState = result.get(parent)
+          if (!parentState) {
+            result.set(id, { level: defaultLevel, isInherited: true, inheritedFrom: null })
+          } else {
+            const from = parentState.isInherited ? parentState.inheritedFrom : parent
+            result.set(id, { level: parentState.level, isInherited: true, inheritedFrom: from })
+          }
+        }
+      }
+    }
+  }
+  return result
+}
+
+export function setPermWithDescendants(
+  id: number,
+  level: PermissionLevel,
+  flat: FlatTree,
+  explicitPerms: Map<number, PermissionLevel>,
+): Map<number, PermissionLevel> {
+  const next = new Map(explicitPerms)
+  next.set(id, level)
+  const descendants = flat.descendantsMap.get(id) ?? []
+  for (const d of descendants) next.delete(d)
+  return next
+}
+
+export function clearPermAndInherit(
+  id: number,
+  flat: FlatTree,
+  explicitPerms: Map<number, PermissionLevel>,
+): Map<number, PermissionLevel> {
+  const next = new Map(explicitPerms)
+  next.delete(id)
+  return next
 }

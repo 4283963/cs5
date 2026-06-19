@@ -1,12 +1,16 @@
 import { create } from 'zustand'
-import type { TreeNode } from '@shared/types'
+import type { TreeNode, PermissionLevel } from '@shared/types'
 import { fetchOrgTree, fetchStatus, type DbMode } from '@/lib/api'
 import {
   buildFlatTree,
   defaultExpanded,
   toggleCheckedSet,
   allExpandableIds,
+  computePermStates,
+  setPermWithDescendants,
+  clearPermAndInherit,
   type FlatTree,
+  type PermState,
 } from '@/lib/treeUtils'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
@@ -20,6 +24,8 @@ interface TreeState {
   checked: Set<number>
   expanded: Set<number>
   query: string
+  explicitPerms: Map<number, PermissionLevel>
+  permStates: Map<number, PermState>
   load: () => Promise<void>
   toggleCheck: (id: number) => void
   toggleExpand: (id: number) => void
@@ -28,6 +34,9 @@ interface TreeState {
   checkAll: () => void
   clearChecked: () => void
   setQuery: (q: string) => void
+  setPermission: (id: number, level: PermissionLevel, cascade?: boolean) => void
+  unlockPermission: (id: number) => void
+  resetPermission: (id: number) => void
 }
 
 export const useTreeStore = create<TreeState>((set, get) => ({
@@ -39,6 +48,8 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   checked: new Set(),
   expanded: new Set(),
   query: '',
+  explicitPerms: new Map(),
+  permStates: new Map(),
 
   load: async () => {
     set({ status: 'loading', error: null })
@@ -57,6 +68,8 @@ export const useTreeStore = create<TreeState>((set, get) => ({
         status: 'success',
         expanded: defaultExpanded(flat),
         dbMode,
+        explicitPerms: new Map(),
+        permStates: computePermStates(new Map(), flat),
       })
     } catch (e) {
       set({ status: 'error', error: (e as Error).message })
@@ -95,4 +108,34 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   clearChecked: () => set({ checked: new Set() }),
 
   setQuery: (q) => set({ query: q }),
+
+  setPermission: (id, level, cascade = true) => {
+    const { flat, explicitPerms } = get()
+    if (!flat) return
+    const next = cascade
+      ? setPermWithDescendants(id, level, flat, explicitPerms)
+      : (() => {
+          const m = new Map(explicitPerms)
+          m.set(id, level)
+          return m
+        })()
+    set({ explicitPerms: next, permStates: computePermStates(next, flat) })
+  },
+
+  unlockPermission: (id) => {
+    const { flat, explicitPerms, permStates } = get()
+    if (!flat) return
+    const state = permStates.get(id)
+    if (!state || !state.isInherited) return
+    const next = new Map(explicitPerms)
+    next.set(id, state.level)
+    set({ explicitPerms: next, permStates: computePermStates(next, flat) })
+  },
+
+  resetPermission: (id) => {
+    const { flat, explicitPerms } = get()
+    if (!flat) return
+    const next = clearPermAndInherit(id, flat, explicitPerms)
+    set({ explicitPerms: next, permStates: computePermStates(next, flat) })
+  },
 }))

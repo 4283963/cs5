@@ -1,5 +1,15 @@
 export type NodeType = 'department' | 'sub_department' | 'team' | 'employee'
 
+export type PermissionLevel = 'read' | 'write' | 'admin'
+
+export const PERMISSION_LABEL: Record<PermissionLevel, string> = {
+  read: '读取',
+  write: '写入',
+  admin: '管理',
+}
+
+export const PERMISSION_ORDER: PermissionLevel[] = ['read', 'write', 'admin']
+
 export interface OrgRow {
   id: number
   parent_id: number | null

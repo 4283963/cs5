@@ -18,9 +18,13 @@ export function PermissionTree() {
   const error = useTreeStore((s) => s.error)
   const checked = useTreeStore((s) => s.checked)
   const expanded = useTreeStore((s) => s.expanded)
+  const permStates = useTreeStore((s) => s.permStates)
   const query = useTreeStore((s) => s.query)
   const toggleCheck = useTreeStore((s) => s.toggleCheck)
   const toggleExpand = useTreeStore((s) => s.toggleExpand)
+  const setPermission = useTreeStore((s) => s.setPermission)
+  const unlockPermission = useTreeStore((s) => s.unlockPermission)
+  const resetPermission = useTreeStore((s) => s.resetPermission)
   const load = useTreeStore((s) => s.load)
 
   const states = useMemo(
@@ -75,6 +79,7 @@ export function PermissionTree() {
   const ctxValue: TreeCtxValue = {
     flat,
     states,
+    permStates,
     query,
     visibleIds,
     matchedIds,
@@ -82,6 +87,9 @@ export function PermissionTree() {
     isSearching,
     onToggleCheck: toggleCheck,
     onToggleExpand: toggleExpand,
+    onSetPermission: setPermission,
+    onUnlockPermission: unlockPermission,
+    onResetPermission: resetPermission,
   }
 
   return (

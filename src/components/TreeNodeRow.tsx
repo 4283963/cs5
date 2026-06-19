@@ -5,12 +5,14 @@ import { NodeCheckbox } from './NodeCheckbox'
 import { NodeIcon } from './NodeIcon'
 import { TypeBadge } from './TypeBadge'
 import { Highlight } from './Highlight'
+import { PermDropdown } from './PermDropdown'
 import { NODE_VISUAL } from '@/lib/nodeVisual'
 import { cn } from '@/lib/utils'
 
 export function TreeNodeRow({ node }: { node: TreeNode }) {
   const {
     states,
+    permStates,
     query,
     visibleIds,
     matchedIds,
@@ -18,6 +20,9 @@ export function TreeNodeRow({ node }: { node: TreeNode }) {
     isSearching,
     onToggleCheck,
     onToggleExpand,
+    onSetPermission,
+    onUnlockPermission,
+    onResetPermission,
   } = useTreeCtx()
 
   const visible = visibleIds ? visibleIds.has(node.id) : true
@@ -26,8 +31,10 @@ export function TreeNodeRow({ node }: { node: TreeNode }) {
   const hasChildren = node.children.length > 0
   const isExpanded = expanded.has(node.id)
   const state = states.get(node.id) ?? 'unchecked'
+  const permState = permStates.get(node.id)
   const v = NODE_VISUAL[node.nodeType]
   const isMatched = matchedIds.has(node.id)
+  const showPerm = state !== 'unchecked' && permState
 
   return (
     <div>
@@ -82,6 +89,18 @@ export function TreeNodeRow({ node }: { node: TreeNode }) {
         <span className="ml-auto shrink-0">
           <TypeBadge type={node.nodeType} />
         </span>
+
+        {showPerm && permState && (
+          <div className="shrink-0 pl-1">
+            <PermDropdown
+              state={permState}
+              accent={v.accent}
+              onSelect={(level) => onSetPermission(node.id, level, true)}
+              onUnlock={() => onUnlockPermission(node.id)}
+              onReset={() => onResetPermission(node.id)}
+            />
+          </div>
+        )}
       </div>
 
       {hasChildren && isExpanded && (

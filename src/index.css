@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --canvas: #0a0c0b;
+  --jade: #3ddc97;
+  --amber: #f5b13d;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(1200px 620px at 82% -12%, rgba(61, 220, 151, 0.09), transparent 60%),
+    radial-gradient(900px 520px at -10% 8%, rgba(245, 177, 61, 0.055), transparent 55%),
+    linear-gradient(180deg, #0a0c0b 0%, #080a09 100%);
+  background-attachment: fixed;
+  color: #e9ece7;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  font-feature-settings: "ss01", "cv01";
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 颗粒噪点叠层，营造控制台质感 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(61, 220, 151, 0.25);
+  color: #eafff5;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a322c transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #242b26;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #313a32;
+  background-clip: content-box;
+}
+
+/* 原生 HTML Checkbox：使用 accent-color 染色，满足「HTML 复选框」要求 */
+input[type="checkbox"].jade-check {
+  accent-color: var(--jade);
+  cursor: pointer;
+}
+input[type="checkbox"].amber-check {
+  accent-color: var(--amber);
+  cursor: pointer;
+}
+
+/* 树形连线 */
+.tree-children {
+  position: relative;
+}
+.tree-children::before {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  top: 0;
+  bottom: 0.5rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(139, 148, 140, 0.28), rgba(139, 148, 140, 0.06));
+}
